@@ -1001,13 +1001,7 @@ function vkwpv_ad () {
     <p>Плагин <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">VK-WP Bridge</a> позволяет создать полноценный сайт или раздел на уже действующем сайте, полностью (посты, фото, видео, комментарии, лайки и т.п.) синхронизированный с группой ВКонтакте и автообновляемый по графику.</p>
     <p><i>Хватит работать на ВКонтакте!<br/>Пусть <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">ВКонтакте поработает на вас</a>!</i></p>
     <p>'.get_submit_button('Узнать больше', 'primary', 'get_vk_wp_bridge', false).'</p>       
-    ';  
-  echo '
-    <h3>Сообщество WordPress ВКонтакте</h3>
-    <p>WordPress: ответы, решения, интеграция с ВКонтакте.</p>
-    <p>Стартапы WordPress: рассказываем, поддерживаем, делаем.</p>
-    <p>'.get_submit_button('Вступить в сообщество', 'primary', 'get_wordpressvk', false).'</p>       
-    ';      
+    ';        
         
 }
 
