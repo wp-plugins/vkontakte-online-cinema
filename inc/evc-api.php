@@ -48,8 +48,12 @@ endif;
 if (!function_exists('evc_vk_groups_get')) :
 function evc_vk_groups_get($params = array(), $option_name = null) {
   $options = get_option($option_name);
-  if (!isset($options['access_token']))
-    $options['access_token'] = $options['site_access_token'];
+  if (!isset($options['access_token'])){
+    if (isset($options['site_access_token']) && !empty($options['site_access_token']))
+      $options['access_token'] = $options['site_access_token'];
+    else
+      return false;
+  }
     
   $default = array(
     'access_token' => $options['access_token'],
