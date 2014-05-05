@@ -3,7 +3,7 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0
+Version: 1.0.1
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
@@ -1011,13 +1011,13 @@ function vkwpv_ad_js () {
 <script type="text/javascript" >
   jQuery(document).ready(function($) {
 
-    $(document).on( 'click', '#get_vk_seo_comments, #get_vk_seo_comments2, #get_vk_seo_comments3', function (e) {    
+    $(document).on( 'click', '.get-vk-wp-video-pro', function (e) {    
       e.preventDefault();
       window.open(
-        ' http://ukraya.ru/242/vk-seo-comments',
+        'http://ukraya.ru/316/vk-wp-video-pro',
         '_blank'
       );
-    });  
+    }); 
 
     $(document).on( 'click', '#get_vk_wp_bridge', function (e) {    
       e.preventDefault();
@@ -1025,15 +1025,7 @@ function vkwpv_ad_js () {
         'http://ukraya.ru/162/vk-wp-bridge',
         '_blank'
       );
-    });      
-
-    $(document).on( 'click', '#get_wordpressvk', function (e) {    
-      e.preventDefault();
-      window.open(
-        'http://vk.com/wordpressvk',
-        '_blank'
-      );
-    });  
+    });       
 
   
   }); // jQuery End
