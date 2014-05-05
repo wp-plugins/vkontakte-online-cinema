@@ -1019,6 +1019,7 @@ function vkwpv_ad_js () {
       );
     }); 
 
+    <?php if (!function_exists('evc_ad')) { ?>
     $(document).on( 'click', '#get_vk_wp_bridge', function (e) {    
       e.preventDefault();
       window.open(
@@ -1026,6 +1027,7 @@ function vkwpv_ad_js () {
         '_blank'
       );
     });       
+    <?php } ?>     
 
   
   }); // jQuery End
