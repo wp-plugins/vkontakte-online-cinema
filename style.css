@@ -1,0 +1,17 @@
+.vkwpv-video {
+  height: 0;
+  overflow: hidden;
+  padding-bottom: 56.25%;
+  position: relative;
+  margin-bottom:20px;
+}
+.vkwpv-video iframe, 
+.vkwpv-video object, 
+.vkwpv-video embed, 
+.vkwpv-video video {
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
