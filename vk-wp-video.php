@@ -3,33 +3,17 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0.1
+Version: 1.0.2
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
 
-// 2014-04-10
+// 2014-05-09
 
 // Constants
 if (!defined('VK_API_URL'))
   define('VK_API_URL','https://api.vk.com/method/');
 include_once('inc/evc-api.php'); 
-
-add_action('init', 'vkwpv_activate');
-function vkwpv_activate () {
-  //delete_option('vkwpv');
-  //vkwpv_refresh_cron();
-  $vkwpv_vk_api = get_option('vkwpv_vk_api');  
-  $vkwpv_vk_api = get_option('vkwpv_vk_api');  
-  $evc_vk_api_widgets = get_option('evc_vk_api_widgets');  
-  if (!$vkwpv_vk_api || empty($vkwpv_vk_api)) {
-    if ($evc_vk_api_widgets && isset($evc_vk_api_widgets['site_acess_token']) && !empty($evc_vk_api_widgets['site_acess_token'])){
-      
-    }
-  }
-  
-  //print__r($vkwpv_vk_api);
-}
 
 function vkwpv_get_vk_new_posts ($new) {
   
@@ -66,24 +50,6 @@ function vkwpv_refresh ($data = array()) {
       $data['owner_id'] = $options['owner_id'];
     else {
       return false;
-      /*
-      if (isset($options['url']) && !empty($options['url'])) {
-        
-        $urla = explode('?', $options['url']);        
-        if (isset($urla[0]) && !empty($urla[0])){
-          $owner_id = explode('videos', $urla[0]);
-          $data['owner_id'] = $owner_id[1];
-          if (isset($urla[1]) && !empty($urla[1])) {
-            $album_id = explode('album_', $urla[1]);
-            $data['$album_id'] = $album_id[1];
-          }
-        }
-        else
-          return false;      
-      }
-      else
-        return false;
-      */
     }
   }
   $data = apply_filters('vkwpv_refresh_data', $data, $data, $options);
@@ -119,10 +85,7 @@ function vkwpv_refresh_js() {
     $out['error'] = 'Error';
   else {
     $args['owner_id'] = $owner_id;
-    /*
-    if (isset($album_id))
-      $args['album_id'] = $album_id;
-    */
+
     if (isset($refresh_count))
       $args['count'] = $refresh_count;
     if (isset($refresh_offset_count))
@@ -132,10 +95,7 @@ function vkwpv_refresh_js() {
     $posts = vkwpv_refresh($args);
     if ($posts === false)
       $out['error'] = 'Error';
-    /*
-    elseif($posts == 0)
-      $out = array('success' => true, 'posts' => $posts);
-    */
+
     else {
       $out = array('success' => true, 'posts' => $posts);
     }
@@ -177,17 +137,7 @@ function vkwpv_add_posts ($d) {
       $filters = apply_filters('vkwpv_add_posts_filters', false, $options, $post);
       if ($filters)
         continue;
-      /*
-      if ( 
-        (isset($options['duration_min']) && !empty($options['duration_min']) && $post['duration'] < $options['duration_min']) 
-        || (isset($options['duration_max']) && !empty($options['duration_max']) && $post['duration'] > $options['duration_max']) 
-        || (isset($options['vkwpv_skip_videos_wt']['on']) && empty($post['description']) ) 
-        || (isset($options['vkwpv_post_characters']) && !empty($options['vkwpv_post_characters']) && mb_strlen($post['description']) < $options['vkwpv_post_characters'] )
-      ) {
-        continue;      
-      }
-      */
-      
+              
       vkwpv_add_post($post);
       $i++;
     }
@@ -253,7 +203,10 @@ function vkwpv_add_post($post) {
   $meta['duration'] = $post['duration'];
   $meta['vk_player'] = $post['player'];  
   
-  
+  $meta = apply_filters('vkwpv_add_post_image_meta', $meta, $meta, $post, $post_ID);
+  if (isset($meta) && !empty($meta))
+    add_post_meta($post_ID, 'vk_img', $meta );
+      
   add_post_meta($post_ID, 'vk_img', $meta );     
     
   return $post_ID;
@@ -273,15 +226,6 @@ function vkwpv_add_post_insert_terms($data, $w) {
   //vkwpa_add_log('vkwpb_albums_add_post_insert_terms: after' . print_r($new_post,1 )); 
   return $new_post;  
 }
-/*
-
-add_action('wp_enqueue_scripts', 'vkwpb_albums_enqueue_scripts');
-function vkwpb_albums_enqueue_scripts () {
-  
-  wp_register_style( 'vkwpb_albums_style', plugins_url('/style.css', __FILE__) );
-  wp_enqueue_style( 'vkwpb_albums_style' );  
-}
-*/
 
 function vkwpv_get_groups () {
   $out['my'] = 'Мои видеозаписи'; 
@@ -547,7 +491,21 @@ function vkwpv_init() {
           'on' => 'Устанавливать обложку видео как Featured Image.'
         ) 
       ),
-     
+      
+      array(
+        'name' => 'post_thumbnail_type',
+        'label' => __( 'Обложки для видео', 'vkwpv' ),
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Сохранять ли обложки видео на сайте (как attachment) или загружать их из ВКонтакте (<em>не рекомендуется</em>).', 'vkwpv' ),
+        'type' => 'radio',
+        'default' => 'int',
+        'options' => array(
+          'int' => 'Сохранять на сайте',
+          'ext' => 'Не сохранять на сайте / <small>Не рекомендуется. Опция Featured Image работать не будет.</small>'
+        ),
+        'readonly' => true
+      ),  
+           
      array(
         'name' => 'width',
         'label' => __( 'Ширина видеозаписей', 'vkwpv' ),
@@ -626,7 +584,7 @@ add_action( 'admin_init', 'vkwpv_init' );
 function vkwpv_menu() {
   global $vkwpv_page; 
   
-  add_menu_page( 'VK-WP Video', 'VK-WP Video', 'activate_plugins', 'vk-wp-video', 'vkwpv_page', '', '99.13' ); 
+  add_menu_page( 'VK Cinema', 'VK Cinema', 'activate_plugins', 'vk-wp-video', 'vkwpv_page', '', '99.13' ); 
   $vkwpv_page = add_submenu_page( 'vk-wp-video', 'Импорт видео из ВКонтакте', 'Импорт видео ВК', 'activate_plugins', 'vk-wp-video', 'vkwpv_page' );  
 
   add_action( 'admin_footer-'. $vkwpv_page, 'vkwpv_page_js' );
@@ -646,30 +604,7 @@ function vkwpv_albums_img_refresh ($count) {
 function vkwpv_page() {
   global $vkwpv;
   $options = get_option('vkwpv');   
-  //vkwpv_refresh();
-  /*
-  vkwpv_refresh (array(
-    'owner_id' => '-40826169', 
-    'count' => 2, 
-    'offset' => ''  
-  ));
-  */
-  //print__r($options);
-  //print__r(get_transient('vk_videos'));
-  //$vkwpv_vk_api = get_option('vkwpv_vk_api');   
-  //print__r($vkwpv_vk_api);
-  //print__r($_SERVER);
-  $site_url = site_url();
-  $site_url = 'http://www.example.com/wordpress';
-  //print $site_url;
-  //print__r(parse_url($site_url));
-  
-  //$groups = evc_vk_groups_get(array('filter' => 'admin'), 'vkwpv_vk_api');
-  //print__r($groups);
- 
 
-   
-  
   echo '<div class="wrap">';
     echo '<div id="icon-options-general" class="icon32"><br /></div>';
     echo '<h2>Импорт видео из ВКонтакте</h2>';
@@ -692,13 +627,6 @@ function vkwpv_page() {
   echo '</div>';
 }
 
-/*
-add_filter('vkwpv_app_scope', 'vkwpb_albums_scopes', 50);
-function vkwpb_albums_scopes ($str) {
-  $out = (strpos($str, 'photos') == false) ? $str . ',photos' : $str;
-  return $out;
-}
-*/
 function vkwpv_page_js() {
 ?>
 <script type="text/javascript" >
@@ -715,25 +643,7 @@ function vkwpv_page_js() {
       if ($("#vkwpv\\[refresh_offset_count\\]").val().length){
         ajaxData.refresh_offset_count = $("#vkwpv\\[refresh_offset_count\\]").val();
       }      
-      
 
-      
-      /*
-      if ($("#vkwpv\\[url\\]").val().length){
-        url = $("#vkwpv\\[url\\]").val().trim().split('?');
-        
-        if (typeof url[0] !== 'undefined') {
-          ajaxData.owner_id = url[0].split('videos')[1];
-          if (typeof url[1] !== 'undefined')
-            ajaxData.album_id = url[1].split('album_')[1];  
-          console.log(ajaxData); //
-        }
-        else
-          return false;
-      }
-      else
-        return false;      
-      */
       if ($("#vkwpv\\[owner_id\\]").val().length) {
         ajaxData.owner_id = $("#vkwpv\\[owner_id\\]").val();
         //console.log(ajaxData); //
@@ -819,7 +729,6 @@ function vkwpv_page_js() {
         action: 'vkwpv_clear_cache'
       };      
       
-      //alert($("#evc_bridge\\[group_url\\]").val());
       $.ajax({
         url: ajaxurl,
         data: data,
@@ -864,7 +773,7 @@ function vkwpv_page_js() {
 
 add_action('wp_ajax_vkwpv_clear_cache', 'vkwpv_clear_cache');
 function vkwpv_clear_cache() {
-  //delete_transient('vk_wall');
+  
   $vk_videos = get_transient('vk_videos');
   if ($vk_videos && !empty($vk_videos))
     delete_transient('vk_videos');
@@ -1018,6 +927,7 @@ function vkwpv_ad_js () {
         '_blank'
       );
     }); 
+
     <?php if (!function_exists('evc_ad')) { ?>
     $(document).on( 'click', '#get_vk_wp_bridge', function (e) {    
       e.preventDefault();
@@ -1026,7 +936,8 @@ function vkwpv_ad_js () {
         '_blank'
       );
     });       
-    <?php } ?>
+    <?php } ?>     
+
   
   }); // jQuery End
 </script>
