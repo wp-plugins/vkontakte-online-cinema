@@ -3,12 +3,12 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0.2
+Version: 1.0.3
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
 
-// 2014-05-09
+// 2014-06-19
 
 // Constants
 if (!defined('VK_API_URL'))
@@ -440,6 +440,23 @@ function vkwpv_init() {
         ),
         'readonly' => true  
       ),    
+      
+     array(
+        'name' => 'vkwpv_hd',
+        'label' => __( 'Качество видео', 'vkwpv' ),        
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Если опция включена, будут добавлены только видео с указанным качеством. Внимание! Если видеофайл размещен не вконтакте - видео добавлено не будет.', 'vkwpv' ),
+        'readonly' => true,
+        'type' => 'select',
+        'default' => 'off',
+        'options' => array(
+          'off' => 'off',
+          '240' => '240',
+          '360' => '360',
+          '480' => '480',
+          '720' => '720'                    
+        )            
+      ),        
       
       array(
         'name' => 'vkwpv_user_id',
