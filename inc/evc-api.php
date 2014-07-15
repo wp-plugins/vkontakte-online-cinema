@@ -196,8 +196,10 @@ function evc_get_log ($lines = 50) {
   if (false === ( $logs = get_transient('evc_log')) )
     return 'No logs yet.';
 
-  krsort($logs);    
-  $logs = array_slice($logs, 0, $lines);
+  if (is_array($logs)) {
+    krsort($logs);    
+    $logs = array_slice($logs, 0, $lines);
+  }
   
   return print_r($logs,1);
 }
