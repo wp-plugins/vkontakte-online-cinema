@@ -3,12 +3,12 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0.3
+Version: 1.0.4
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
 
-// 2014-06-19
+// 2014-08-12
 
 // Constants
 if (!defined('VK_API_URL'))
@@ -52,7 +52,7 @@ function vkwpv_refresh ($data = array()) {
       return false;
     }
   }
-  $data = apply_filters('vkwpv_refresh_data', $data, $data, $options);
+  $data = apply_filters('vkwpv_refresh_data', $data, $options);
   if ($data === false)
     return false;
   
@@ -68,7 +68,7 @@ function vkwpv_refresh ($data = array()) {
   // Upload Images
   evc_refresh_vk_img_all();
   
-  //evc_bridge_add_log('wall' . print_r($wall, 1));   
+  //evc_bridge_add_log('wall' . print_r($wall, 1));   //
   set_transient( 'vk_videos', $res, 26*HOUR_IN_SECONDS );  
   
   evc_add_log('vkwpv_refresh: Refresh End.');
@@ -91,7 +91,7 @@ function vkwpv_refresh_js() {
     if (isset($refresh_offset_count))
       $args['offset'] = $refresh_offset_count;
       
-    $args = apply_filters('vkwpv_refresh_js_args', $args, $args);
+    $args = apply_filters('vkwpv_refresh_js_args', $args);
     $posts = vkwpv_refresh($args);
     if ($posts === false)
       $out['error'] = 'Error';
@@ -128,7 +128,7 @@ function vkwpv_add_posts ($d) {
   
   // get post_id from each post
   $ids = vkwpv_get_vk_items_ids($d);
-  //evc_add_log('vkwpv_get_vk_items_ids: ' . print_r($ids,1));
+  //evc_add_log('vkwpv_get_vk_items_ids: ' . print_r($ids,1));//
   $i = 0;
   foreach($d['items'] as $post) {   
     // If New Post
@@ -165,6 +165,9 @@ function vkwpv_add_post($post) {
   
   if (!isset($options['vkwpv_user_id']) || empty($options['vkwpv_user_id']))
     $options['vkwpv_user_id'] = 1;
+  
+  if (!isset($post['title']) || empty($post['title'])) 
+    $post['title'] = $post['id'];
       
   $new_post = array(
     'post_title' => $post['title'],
@@ -203,7 +206,7 @@ function vkwpv_add_post($post) {
   $meta['duration'] = $post['duration'];
   $meta['vk_player'] = $post['player'];  
   
-  $meta = apply_filters('vkwpv_add_post_image_meta', $meta, $meta, $post, $post_ID);
+  $meta = apply_filters('vkwpv_add_post_image_meta', $meta, $post, $post_ID);
   if (isset($meta) && !empty($meta))
     add_post_meta($post_ID, 'vk_img', $meta );
       
@@ -705,7 +708,7 @@ function vkwpv_page_js() {
       e.preventDefault();
       
       var data = {
-        action: 'vkwpv_refresh_vk_img'
+        action: 'evc_refresh_vk_img'
       };      
       
       $.ajax({

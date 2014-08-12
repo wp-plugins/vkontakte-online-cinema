@@ -3,7 +3,7 @@ Contributors: alekseysolo
 Tags: vkontakte, vk, autopublish, video, cinema, online cinema
 Requires at least: 3.5
 Tested up to: 3.9
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,6 +34,9 @@ You can import all the videos and their descriptions, set the author and categor
 1. VK-WP Video Settings.
 
 == Changelog ==
+
+= 1.0.4 / 2014-08-12 =
+* Fixed several bugs.
 
 = 1.0.3 / 2014-06-19 =
 * Prepare for video HD filter.
