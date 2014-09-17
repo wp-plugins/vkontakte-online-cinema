@@ -3,12 +3,12 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0.4
+Version: 1.0.5
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
 
-// 2014-08-12
+// 2014-09-17
 
 // Constants
 if (!defined('VK_API_URL'))
@@ -233,11 +233,18 @@ function vkwpv_add_post_insert_terms($data, $w) {
 function vkwpv_get_groups () {
   $out['my'] = 'Мои видеозаписи'; 
   
-  $groups = evc_vk_groups_get(array('filter' => 'admin'), 'vkwpv_vk_api');
+  if (false === ($groups = get_transient('vkwpv_my_groups'))) {
+    $groups = evc_vk_groups_get(array('filter' => 'admin'), 'vkwpv_vk_api');
+    
+    if ($groups && isset($groups['count']) && $groups['count'] > 0)
+      set_transient('vkwpv_my_groups', $groups, 6 * HOUR_IN_SECONDS); 
+  }
+
   if (!$groups || !$groups['count']) {
     $out = array('0' => 'Групп нет или не удалось получить список');
   }
   else {
+    
     foreach($groups['items'] as $group) {
       $dots = (mb_strlen($group['name']) > 50) ? '...' : '';
       $out[-1 * $group['id']] = trim(mb_substr($group['name'], 0, 50)) . $dots;
@@ -422,7 +429,8 @@ function vkwpv_init() {
         Оставьте пустым, чтобы не учитывать.', 'vkwpv' ),
         'type' => 'text',
         'readonly' => true 
-      ),          
+      ),         
+             
       array(
         'name' => 'vkwpv_post_characters',
         'label' => __( 'Описание видео', 'vkwpv' ),
@@ -443,6 +451,17 @@ function vkwpv_init() {
         ),
         'readonly' => true  
       ),    
+
+     array(
+        'name' => 'vkwpv_skip_description',
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Если опция включена, не будет добавлено описание видеозаписей.', 'vkwpv' ),
+        'type' => 'multicheck',
+        'options' => array(
+          'on' => 'Не добавлять описание видеозаписей.'
+        ),
+        'readonly' => true  
+      ), 
       
      array(
         'name' => 'vkwpv_hd',
@@ -931,7 +950,12 @@ function vkwpv_ad () {
     <p><i>Хватит работать на ВКонтакте!<br/>Пусть <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">ВКонтакте поработает на вас</a>!</i></p>
     <p>'.get_submit_button('Узнать больше', 'primary', 'get_vk_wp_bridge', false).'</p>       
     ';        
-        
+  
+  echo '
+    <h3>EVC PRO: грандиозные возможности!</h3>
+    <p>Плагин <a href = "http://ukraya.ru/421/evc-pro" target = "_blank">EVC PRO</a> даст вам возможности, которых нет у других пользователей. Вы сможете, не прилагая усилий, получить больше подписчиков в свои группы ВКонтакте, больше лайков, репостов, комментариев к материалам...</p>
+    <p>'.get_submit_button('Узнать больше', 'primary', 'get_evc_pro', false).'</p>  
+    ';          
 }
 
 add_action( 'admin_footer', 'vkwpv_ad_js', 30 );
@@ -956,6 +980,15 @@ function vkwpv_ad_js () {
         '_blank'
       );
     });       
+    
+    $(document).on( 'click', '#get_evc_pro, .get-evc-pro', function (e) {    
+      e.preventDefault();
+      window.open(
+        'http://ukraya.ru/421/evc-pro',
+        '_blank'
+      );
+    }); 
+        
     <?php } ?>     
 
   
