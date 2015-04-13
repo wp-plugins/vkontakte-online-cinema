@@ -27,7 +27,7 @@ function evc_vk_video_get($params = array()) {
   
   //print__r($data); //
   if (is_wp_error($data)) {
-    evc_add_log('evc_vk_video_get: WP ERROR. ' . $data->get_error_code() . ' '. $data->get_error_message());
+    vkwpv_add_log('evc_vk_video_get: WP ERROR. ' . $data->get_error_code() . ' '. $data->get_error_message());
     return false;
   }
   
@@ -35,9 +35,9 @@ function evc_vk_video_get($params = array()) {
   
   if (isset($resp['error'])) {    
     if (isset($resp['error']['error_code']))
-      evc_add_log('evc_vk_video_get: VK Error. ' . $resp['error']['error_code'] . ' '. $resp['error']['error_msg']); 
+      vkwpv_add_log('evc_vk_video_get: VK Error. ' . $resp['error']['error_code'] . ' '. $resp['error']['error_msg']); 
     else
-      evc_add_log('evc_vk_video_get: VK Error. ' . $resp['error']);           
+      vkwpv_add_log('evc_vk_video_get: VK Error. ' . $resp['error']);           
     return false; 
   } 
   
@@ -78,7 +78,7 @@ function evc_vk_groups_get($params = array(), $option_name = null) {
   
   //print__r($data); //
   if (is_wp_error($data)) {
-    evc_add_log('evc_vk_groups_get: WP ERROR. ' . $data->get_error_code() . ' '. $data->get_error_message());
+    vkwpv_add_log('evc_vk_groups_get: WP ERROR. ' . $data->get_error_code() . ' '. $data->get_error_message());
     return false;
   }
   
@@ -87,9 +87,9 @@ function evc_vk_groups_get($params = array(), $option_name = null) {
   if (isset($resp['error'])) { 
     
     if (isset($resp['error']['error_code']))
-      evc_add_log('evc_vk_groups_get: VK Error. ' . $resp['error']['error_code'] . ' '. $resp['error']['error_msg']); 
+      vkwpv_add_log('evc_vk_groups_get: VK Error. ' . $resp['error']['error_code'] . ' '. $resp['error']['error_msg']); 
     else
-      evc_add_log('evc_vk_groups_get: VK Error. ' . $resp['error']);           
+      vkwpv_add_log('evc_vk_groups_get: VK Error. ' . $resp['error']);           
     return false; 
   } 
   return $resp['response']; 
@@ -171,14 +171,14 @@ function evc_video_vk_url_filter ($url) {
 endif;
 
 
-if (!function_exists('evc_add_log')) :
-function evc_add_log ($event = '') {
+if (!function_exists('vkwpv_add_log')) :
+function vkwpv_add_log ($event = '') {
   
   $gmt = current_time('timestamp', 1);
   // local time
   $date = gmdate('Y-m-d H:i:s', current_time('timestamp'));
   
-  if (false === ($evc_log = get_transient('evc_log')))
+  if (false === ($evc_log = get_transient('vkwpv_log')))
     $evc_log = array();
 
   $out = $date . ' ' . $event;
@@ -187,13 +187,13 @@ function evc_add_log ($event = '') {
     $evc_log = array_slice($evc_log, -99, 99);  
   
   array_push($evc_log, $out);
-  set_transient('evc_log', $evc_log, YEAR_IN_SECONDS);  
+  set_transient('vkwpv_log', $evc_log, YEAR_IN_SECONDS);  
 }
 endif;
 
-if (!function_exists('evc_get_log')) :
-function evc_get_log ($lines = 50) {
-  if (false === ( $logs = get_transient('evc_log')) )
+if (!function_exists('vkwpv_get_log')) :
+function vkwpv_get_log ($lines = 50) {
+  if (false === ( $logs = get_transient('vkwpv_log')) )
     return 'No logs yet.';
 
   if (is_array($logs)) {
@@ -202,6 +202,33 @@ function evc_get_log ($lines = 50) {
   }
   
   return print_r($logs,1);
+}
+endif;
+
+if (!function_exists('vkwpv_the_log')):
+function vkwpv_the_log ($lines = 50, $separator = '<br/>') {
+  if (false === ( $logs = get_transient('vkwpv_log')) )
+    return 'No logs yet.';
+  
+  if (is_array($logs)) {
+    krsort($logs);    
+    $logs = array_slice($logs, 0, $lines);
+  }
+  
+  $out = array();
+  $i = 0;
+  foreach($logs as $log) {
+    if ($i%10 == 0)
+      $out[] = '';
+      
+    $out[] = $log;
+    $i++;
+  }
+   
+  if (!empty($out))
+    $out = implode($separator, $out);
+  
+  return $out;
 }
 endif;
 /*
@@ -224,22 +251,33 @@ function evc_fetch_remote_file($args) {
   $upload = wp_upload_dir();
   $upload = wp_upload_bits( $file_name, 0, '');
 
-  if ( $upload['error'] )
+  if ( $upload['error'] ) {
+    vkwpv_add_log('evc_fetch_remote_file #1');
     return new WP_Error( 'upload_dir_error', $upload['error'] );
-
+  }
+  //vkwpv_get_log($url);
   $headers = wp_get_http($url, $upload['file']);
 
   if ( !$headers ) {
-    @unlink($upload['file']);
-    return new WP_Error( 'import_file_error', __('Remote server did not respond', 'evc') );
+    vkwpv_add_log('import_file_error: May be https...');
+    $url = str_replace('http', 'https', $url);
+    $headers = wp_get_http($url, $upload['file']);
+       
+    if ( !$headers ) {
+      @unlink($upload['file']);
+      vkwpv_add_log('evc_fetch_remote_file #2');
+      return new WP_Error( 'import_file_error', __('Remote server did not respond', 'evc') );
+    }
   }
 
   if ( $headers['response'] != '200' ) {
     @unlink($upload['file']);
+    vkwpv_add_log('evc_fetch_remote_file #3');
     return new WP_Error( 'import_file_error', sprintf(__('Remote server says: %1$d %2$s', 'evc'), $headers['response'], get_status_header_desc($headers['response']) ) );
   }
   elseif ( isset($headers['content-length']) && filesize($upload['file']) != $headers['content-length'] ) {
     @unlink($upload['file']);
+    vkwpv_add_log('evc_fetch_remote_file #4');
     return new WP_Error( 'import_file_error', __('Remote file is incorrect size', 'evc') );
   }
 
@@ -250,6 +288,7 @@ function evc_fetch_remote_file($args) {
 
   if ( !empty($max_size) && $file_size > $max_size ) {
     @unlink($upload['file']);
+    vkwpv_add_log('evc_fetch_remote_file #5');
     return new WP_Error( 'import_file_error', sprintf(__('Remote file is %1$d KB but limit is %2$d', 'evc'), $file_size/1024, $max_size/1024) );
   }
 
@@ -261,6 +300,7 @@ function evc_fetch_remote_file($args) {
 
     if ( $space_left < 0 ) {
       @unlink($upload['file']);
+      vkwpv_add_log('evc_fetch_remote_file #6');
       return new WP_Error( 'not_enough_diskspace', sprintf(__('You have %1$d KB diskspace used but %2$d allowed.', 'evc'), $space_used/1024, $space_allowed/1024) );
     }
   }
@@ -398,7 +438,7 @@ function evc_get_vk_imgs ($type = 'post', $limit = 10) {
     ".$l."
   ");    
   
-  //evc_add_log('evc_get_vk_imgs:' . print_r($res,1)); 
+  //vkwpv_get_log('evc_get_vk_imgs:' . print_r($res,1)); 
   if (empty($res))
     return false;
   
@@ -432,8 +472,9 @@ function evc_refresh_vk_img ($type, $limit = 50) {
     return false;
   
   $i = 0;    
-  foreach($vk_imgs as $vk_img) {
-    //print__r(maybe_unserialize($vk_img->meta_value));
+  foreach($vk_imgs as $vk_img) {     
+    
+  //print__r(maybe_unserialize($vk_img->meta_value));
     $att_id = evc_save_remote_attachment( maybe_unserialize($vk_img->meta_value), $vk_img->{$type . $postfix}, '', $type );
     //print '$att_id = ' . $att_id;
     if ($att_id) {
@@ -484,7 +525,7 @@ function evc_refresh_vk_img_all () {
   $out['left'] = $ipost + $iuser - $r;
   //$out['left'] = count((array)$ipost) .' ' . count((array)$iuser) . ' ' . $r;
   
-  evc_add_log('evc_refresh_vk_img_all: Refresh: '.$out['refresh'].'. Left: ' . $out['left']. '.');
+  vkwpv_add_log('evc_refresh_vk_img_all: Refresh: '.$out['refresh'].'. Left: ' . $out['left']. '.');
   
   return $out;  
 }

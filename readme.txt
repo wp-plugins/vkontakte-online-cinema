@@ -2,8 +2,8 @@
 Contributors: alekseysolo
 Tags: vkontakte, vk, autopublish, video, cinema, online cinema
 Requires at least: 3.5
-Tested up to: 4.1
-Stable tag: 1.0.5
+Tested up to: 3.9
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,10 +35,11 @@ You can import all the videos and their descriptions, set the author and categor
 
 == Changelog ==
 
-= 1.0.5 / 2014-09-17 =
-* Fixed minor bugs.
+= 1.0.6 / 2015-04-13 =
+* Fixed much bugs.
 
 = 1.0.4 / 2014-08-12 =
+* Added option to positioned collage in the post.
 * Fixed several bugs.
 
 = 1.0.3 / 2014-06-19 =

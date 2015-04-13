@@ -3,12 +3,12 @@
 Plugin Name: VKontakte Online Cinema
 Description: Импорт видеозаписей из групп пользователя.
 Plugin URI: http://ukraya.ru/
-Version: 1.0.5
+Version: 1.1.1
 Author: Aleksej Solovjov
 Author URI: http://ukraya.ru
 */
 
-// 2014-09-17
+// 2015-04-13
 
 // Constants
 if (!defined('VK_API_URL'))
@@ -31,7 +31,7 @@ function vkwpv_get_vk_new_posts ($new) {
 function vkwpv_refresh ($data = array()) {
   $options = get_option('vkwpv'); 
 
-  evc_add_log('vkwpv_refresh: Start Refresh...');
+  vkwpv_add_log('vkwpv_refresh: Start Refresh...');
   
   $options['refresh_count'] = $options['refresh_count']  > 200 ? 200 : $options['refresh_count'];
   
@@ -68,10 +68,12 @@ function vkwpv_refresh ($data = array()) {
   // Upload Images
   evc_refresh_vk_img_all();
   
+  do_action('vkwpv_refresh_action', $data);
+  
   //evc_bridge_add_log('wall' . print_r($wall, 1));   //
   set_transient( 'vk_videos', $res, 26*HOUR_IN_SECONDS );  
   
-  evc_add_log('vkwpv_refresh: Refresh End.');
+  vkwpv_add_log('vkwpv_refresh: Refresh End.');
   return $added;
 }
 
@@ -128,7 +130,7 @@ function vkwpv_add_posts ($d) {
   
   // get post_id from each post
   $ids = vkwpv_get_vk_items_ids($d);
-  //evc_add_log('vkwpv_get_vk_items_ids: ' . print_r($ids,1));//
+  //vkwpv_add_log('vkwpv_get_vk_items_ids: ' . print_r($ids,1));//
   $i = 0;
   foreach($d['items'] as $post) {   
     // If New Post
@@ -151,9 +153,9 @@ function vkwpv_add_posts ($d) {
   }
   
   if ($i)
-    evc_add_log('vkwpv_add_posts: ' . $i . ' new posts added');
+    vkwpv_add_log('vkwpv_add_posts: ' . $i . ' new posts added');
   else
-    evc_add_log('vkwpv_add_posts: No new posts added');    
+    vkwpv_add_log('vkwpv_add_posts: No new posts added');    
   return $i; 
 }
 
@@ -193,10 +195,10 @@ function vkwpv_add_post($post) {
   
   do_action('vkwpv_after_post_add', $post_ID, $post);
   
-  update_post_meta($post_ID, 'vk_item_id', $post['owner_id'] . '_' . $post['id']);  
+  update_post_meta($post_ID, 'vk_item_id', $post['owner_id'] . '_' . $post['id']);   
   
   $meta = array();
-      
+
   $meta['img'] = $post['photo_' . $options['width']];
   $meta['vk_id'] = $post['id'];
   $meta['vk_item_id'] = 'video'.$post['owner_id'] . '_' . $post['id'];  
@@ -210,7 +212,7 @@ function vkwpv_add_post($post) {
   if (isset($meta) && !empty($meta))
     add_post_meta($post_ID, 'vk_img', $meta );
       
-  add_post_meta($post_ID, 'vk_img', $meta );     
+  //add_post_meta($post_ID, 'vk_img', $meta );     
     
   return $post_ID;
 }
@@ -302,6 +304,20 @@ function vkwpv_init() {
         )
       )
     ),
+    'vkwpv_ads' => array(
+      'id' => 'vkwpv_ads',
+      'name' => 'vkwpv_ads',
+      'title' => __( 'Реклама', 'vkwpv' ),
+      'desc' => __( '', 'vkwpv' ),
+      'sections' => array(
+        'vkwpv_ads_section' => array(
+          'id' => 'vkwpv_ads_section',
+          'name' => 'vkwpv_ads_section',
+          'title' => __( 'Настройки для демонстрации рекламы', 'vkwpb' ),
+          'desc' => __( 'Настройки для демонстрации рекламы.', 'vkwpv' ),          
+        )       
+      )
+    ),    
     'vkwpv_log' => array(
       'id' => 'vkwpv_log',
       'name' => 'vkwpv_log',
@@ -314,7 +330,7 @@ function vkwpv_init() {
           'id' => 'vkwpv_log_section',
           'name' => 'vkwpv_log_section',
           'title' => __( 'Лог действий плагина', 'vkwpv' ),
-          'desc' => __( '<pre>' . evc_get_log(100) . '</pre>', 'vkwpv' ),          
+          'desc' => __( '<div>' . vkwpv_the_log(100) . '</div>', 'vkwpv' ),          
         )
       )
     )
@@ -479,6 +495,45 @@ function vkwpv_init() {
           '720' => '720'                    
         )            
       ),        
+
+     array(
+        'name' => 'vkwpv_direct_video',
+        'label' => __( 'Видеоплеер', 'vkwpv' ),        
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Какой плеер использовать для воспоизведения видео на сайте.
+        <br/>При выборе плеера ВК - загружается стандартный iframe, используемый при встраивании видео из ВК. 
+        <br/>При выборе WordPress плеера - плагин получает прямую ссылку на видеофайл и вопроизводит его при помощи встроенного в WP плеера.', 'vkwpv' ),
+        'readonly' => true,
+        'type' => 'radio',
+        'default' => 'vk',
+        'options' => array(
+          'vk' => 'Плеер от ВКонтакте',
+          'wp' => 'WordPress плеер / <small>mediaelement.js, <a href = "http://mediaelementjs.com/" target = "_blank">site</a></small>',
+          'kvs' => 'Kernel Team / <small><a href = "http://www.kernel-video-sharing.com/ru/player/" target = "_blank">site</a></small>',          
+          'other' => 'Другой',                    
+        )           
+      ),
+
+     array(
+        'name' => 'vkwpv_direct_video_poster',      
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Использовать ли в WordPress плеере постер для видео с ВК (физически расположен на сервере вконтакте).', 'vkwpv' ),
+        'readonly' => true,
+        'type' => 'radio',
+        'default' => '1',
+        'options' => array(
+          '1' => 'Да',
+          '0' => 'Нет'
+        )           
+      ),
+
+      array(
+        'name' => 'vkwpv_direct_video_refresh_time',
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Через сколько часов обновлять прямые ссылки на видеозаписи.', 'vkwpv' ),
+        'type' => 'text',
+        'default' => '23'
+      ), 
       
       array(
         'name' => 'vkwpv_user_id',
@@ -587,10 +642,39 @@ function vkwpv_init() {
         'readonly' => true 
       ),                       
        
-    )   
+    ),
+    'vkwpv_ads_section' => array(
+      array(
+        'name' => 'teasernet_site_id',
+        'label' => __( 'TeaserNet', 'vkwpv' ),
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>id сайта', 'vkwpv' ),
+        'type' => 'text',
+        'readonly' => true          
+      ),    
+      array(
+        'name' => 'teasernet_player_id',
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>id плеера', 'vkwpv' ),
+        'type' => 'text',
+        'readonly' => true  
+      ),          
+     array(
+        'name' => 'tubecontext',
+        'label' => __( 'TubeContext', 'vkwpv' ),        
+        'desc' => __( '<small>Доступно в <a href = "javascript:void(0);" class = "get-vk-wp-video-pro">PRO версии</a>.</small>
+        <br/>Реклама от TubeContext.', 'vkwpv' ),
+        'type' => 'multicheck',
+        'options' => array(
+          'on' => 'Включено'
+        ),
+        'readonly' => true  
+      ),              
+    ),               
   );
   $fields = apply_filters('vkwpv_fields', $fields, $fields);
-  
+   
+ 
   if (isset($options['site_app_id']) && !empty($options['site_app_id']) && isset($options['site_app_secret']) && !empty($options['site_app_secret'])) {
     
     array_push(
@@ -900,10 +984,13 @@ function vkwpv_shortcode ($atts = array(), $content = '') {
     extract ($atts);
   
   $meta = get_post_meta($post->ID);  
+  $out = '';
   if (isset($meta['vk_item_id'][0]) && isset($meta['video_code'][0]) ) {    
     $out = '<div class = "vkwpv-video">'.$meta['video_code'][0].'</div>';
   }
-    
+  
+  $out = apply_filters('vkwpv_shortcode_filter', $out, $atts, $post, $meta);
+      
   return $out;
 }
 
@@ -914,7 +1001,9 @@ function vkwpv_the_content_filter ($content) {
   $meta = get_post_meta($post->ID);
   $options = get_option('vkwpv');
   
-  if (is_single() && isset($meta['vk_item_id'][0]) && isset($meta['video_code'][0]) && isset($options['video_embed']) ) {
+  $filter = apply_filters('vkwpv_the_content_filter', false, $meta, $post, $content);
+  
+  if (is_single() && isset($meta['vk_item_id'][0]) && ( isset($meta['video_code'][0]) || $filter ) && isset($options['video_embed']) ) {
     
     $pattern = get_shortcode_regex();
     preg_match_all('/'.$pattern.'/s', $post->post_content, $matches);
@@ -942,70 +1031,41 @@ function vkwpv_ad () {
     <div class = "evc-boxx">
       <p><a href = "http://ukraya.ru/314/vk-wp-video" target = "_blank">Помощь</a> по настройке плагина.</p>
     </div>   
-    ';
-    
+    ';       
+ 
   echo '
-    <h3>Автонаполняемый сайт из группы ВКонтакте в один клик!</h3>
-    <p>Плагин <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">VK-WP Bridge</a> позволяет создать полноценный сайт или раздел на уже действующем сайте, полностью (посты, фото, видео, комментарии, лайки и т.п.) синхронизированный с группой ВКонтакте и автообновляемый по графику.</p>
-    <p><i>Хватит работать на ВКонтакте!<br/>Пусть <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">ВКонтакте поработает на вас</a>!</i></p>
-    <p>'.get_submit_button('Узнать больше', 'primary', 'get_vk_wp_bridge', false).'</p>       
-    ';        
+    <h3>Сайт из группы ВКонтакте в один клик! Сам наполняется и обновляется!</h3>
+    <p>Плагин <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">VK-WP Bridge</a> позволяет создать полноценный сайт или раздел на уже действующем сайте, полностью (посты, фото, видео, <b>аудио</b>, комментарии, лайки и т.п.) синхронизированный с группами ВКонтакте и автообновляемый по графику.</p>
+    <p><i>Хватит загружать музыку на ВКонтакте!<br/>Пусть <a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank">ВКонтакте споет для вас</a>!</i></p>
+    <p><a href = "http://ukraya.ru/162/vk-wp-bridge" target = "_blank" class = "button button-primary">Узнать больше</a></p> 
+    '; 
   
   echo '
-    <h3>EVC PRO: грандиозные возможности!</h3>
-    <p>Плагин <a href = "http://ukraya.ru/421/evc-pro" target = "_blank">EVC PRO</a> даст вам возможности, которых нет у других пользователей. Вы сможете, не прилагая усилий, получить больше подписчиков в свои группы ВКонтакте, больше лайков, репостов, комментариев к материалам...</p>
-    <p>'.get_submit_button('Узнать больше', 'primary', 'get_evc_pro', false).'</p>  
-    ';          
-}
-
-add_action( 'admin_footer', 'vkwpv_ad_js', 30 );
-function vkwpv_ad_js () {
-?>
-<script type="text/javascript" >
-  jQuery(document).ready(function($) {
-
-    $(document).on( 'click', '.get-vk-wp-video-pro', function (e) {    
-      e.preventDefault();
-      window.open(
-        'http://ukraya.ru/316/vk-wp-video-pro',
-        '_blank'
-      );
-    }); 
-
-    <?php if (!function_exists('evc_ad')) { ?>
-    $(document).on( 'click', '#get_vk_wp_bridge', function (e) {    
-      e.preventDefault();
-      window.open(
-        'http://ukraya.ru/162/vk-wp-bridge',
-        '_blank'
-      );
-    });       
+    <h3>EVC PRO: автопубликация по графику и в прайм-тайм!</h3>
+    <p>С плагином <a href = "http://ukraya.ru/421/evc-pro" target = "_blank">EVC PRO</a> вы сможете публиковать ВКонтакте старые и текущие записи в <em>прайм-тайм</em> вашей группы ВК (когда большинство ваших подписчиков находятся онлайн). Это даст еще больше лайков, репостов, комментариев к материалам и подписчиков. Полностью автоматизировано.</p>
+    <p><a href = "http://ukraya.ru/421/evc-pro" target = "_blank" class = "button button-primary">Узнать больше</a></p>  
+    ';  
     
-    $(document).on( 'click', '#get_evc_pro, .get-evc-pro', function (e) {    
-      e.preventDefault();
-      window.open(
-        'http://ukraya.ru/421/evc-pro',
-        '_blank'
-      );
-    }); 
-        
-    <?php } ?>     
-
-  
-  }); // jQuery End
-</script>
-<?php  
+  echo '
+    <h3>Коллаж из фото как ВКонтакте! Просто. Бесплатно</h3>
+    <p>Плагин <a href = "http://ukraya.ru/collage-gallery" target = "_blank">Collage Gallery</a> автоматически создаст адаптивную галерею в форме коллажа (как ВКонтакте) из фото прикрепленных к посту.</p>   
+    <p><a class="thickbox button button-primary" href="'.site_url('wp-admin/plugin-install.php?tab=plugin-information&plugin=collage-gallery&TB_iframe=true&width=772&height=507').'">Установить бесплатно</a></p>       
+    ';         
+              
 }
-
 
 add_action('admin_head', 'vkwpv_admin_head', 99 );
 function vkwpv_admin_head () {
-  echo '<style type="text/css">
+  
+  if ( isset($_GET['page']) && $_GET['page'] == 'vk-wp-video' ) {
+
+?>
+  <style type="text/css">
     #col-right.evc {
       width: 35%;
     }
     #col-left.evc {
-      width: 65%;
+      width: 64%;
     }    
     .evc-box{
       padding:0 20px 0 40px;
@@ -1024,5 +1084,33 @@ function vkwpv_admin_head () {
       margin: 0.5em 0;
       padding: 2px;
     }
-  </style>'; 
+  </style> 
+  <script type="text/javascript" >  
+  jQuery(document).ready(function($) {
+    <?php
+      if (!function_exists('evc_version')) {
+    ?>
+
+    if ($(".evc-box").length) {
+    
+      $("#col-right").stick_in_parent({
+        parent: '#col-container',
+        offset_top: $('#wpadminbar').height() + 10,
+      });
+    }
+
+    <?php
+      }
+    ?>
+  });
+  </script>
+<?php
+  }
+}       
+
+add_action('admin_init', 'vkwpv_admin_init'); 
+function vkwpv_admin_init () { 
+  if ( isset($_GET['page']) && $_GET['page'] == 'vk-wp-video' ) {
+    wp_enqueue_script('sticky-kit', plugins_url('js/jquery.sticky-kit.min.js' , __FILE__), array('jquery'), null, false); 
+  }
 }
